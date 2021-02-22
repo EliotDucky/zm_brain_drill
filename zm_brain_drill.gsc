@@ -8,9 +8,16 @@
 #using scripts\zm\_zm_laststand;
 #using scripts\zm\_zm_perks;
 #using scripts\zm\_zm_weapons;
+#using scripts\zm\_zm_powerups;
 
-#precache("hintstring", "Press ^3[{+activate}]^7 to ^5Mindsave^7");
+#insert scripts\zm\zm_brain_drill\zm_brain_drill.gsh;
+
+
+#precache("triggerstring", "Press ^3[{+activate}]^7 to ^5Mindsave^7");
+#precache("triggerstring", "SOMEONE ELSE IS SAVED HERE");
+#precache("triggerstring", "YOU ARE MINDSAVED HERE");
 #precache("model", "c_t6_default_character_fb");
+#precache("model", "p7_zm_der_zombie_brain"); //powerup model
 
 #namespace zm_brain_drill;
 
@@ -33,6 +40,18 @@ Brain Drill setup:
 	struct
 	targetname: "brain_drill_clone"
 
+Scripting Use:
+
+brain_drill trig:
+	.stored_player = the player stored there
+
+player:
+	.brain_drill → brain_drill struct
+	.can_mindsave, bool for whether this player can save themselves to machine
+
+level:
+	.train_hit, true if player has shot train to spawn a brain drop
+
 */
 
 function brainDrillInit()
@@ -44,15 +63,63 @@ function brainDrillInit()
 	
 	//GET ENT OF BRAIN DRILLS and thread on waitfors
 	callback::on_player_killed(&checkPlayerBrainDrill);
+	callback::on_connect(&onPlayerConnect);
 	//level.callbackPlayerKilled = &checkPlayerBrainDrill;
 
 	//GLOBAL LOGIC DOESN'T WORK, DELETE AND UNCOMMENT IN ZM_PATCH
 	//level.brain_drill_callback = &checkPlayerBrainDrill;
 
-	brain_trigs = GetEntArray("brain_drill_trig", "targetname");
-	array::thread_all(brain_trigs, &brainDrillWaitFor);
+	level.brain_trigs = GetEntArray("brain_drill_trig", "targetname");
+	array::thread_all(level.brain_trigs, &brainDrillWaitFor);
+
+	//powerup
+	brainDropInit();
 
 	level thread demo();
+}
+
+//Call On: Player connected
+function onPlayerConnect(){
+	self.can_mindsave = false;
+}
+
+function brainDropInit(){
+	zm_powerups::register_powerup( "brain", &grabDropBrain );
+	zm_powerups::add_zombie_powerup( "brain",
+									"p7_zm_der_zombie_brain",
+								 	"BRAIN DROP",
+								 	&shouldDropBrain,
+								 	true,
+								 	false,
+								 	false);
+	zm_powerups::powerup_set_player_specific("brain", true);
+}
+
+function grabDropBrain(player){
+	player.can_mindsave = true;
+	//set hintstrings for player based on who's stored there
+	foreach(trig in level.brain_trigs){
+		trig brainDrillHintEnable(player);
+	}
+}
+
+function shouldDropBrain(){
+	b = level.train_hit || level.round_number >= BRAIN_DROP_ROUND;
+	//FOLLOWING IS FOR TESTING ONLY:
+	b = true; //DELETE FOR RELEASE
+	return b;
+}
+
+//Call On: brain drill trig
+function brainDrillHintEnable(player){
+	//if this trigger already storing another player
+	if(isdefined(self.stored_player) && self.stored_player != player){
+		//"someone else is saved here"
+		self SetHintStringForPlayer(player, "SOMEONE ELSE IS SAVED HERE");
+	}else{
+		//(this includes if this player is stored here - they replace themself)
+		self SetHintStringForPlayer(player, "Press ^3[{+activate}]^7 to ^5Mindsave^7");
+	}
 }
 
 //FOR TESTING ONLY
@@ -71,14 +138,18 @@ function demo(){
 function brainDrillWaitFor(){
 	self UseTriggerRequireLookAt();
 	self SetCursorHint("HINT_NOICON");
-	self SetHintString("Press ^3[{+activate}]^7 to ^5Mindsave^7");
+	self SetHintString("");
 
 	brain_drill = struct::get(self.target, "targetname");
 
 	for(;;){
 		self waittill("trigger", player);
-		IPrintLnBold("mindsaved");
-		player thread brainDrillSave(brain_drill);
+		can_save_here = isdefined(player.can_mindsave) && player.can_mindsave;
+		can_save_here &= !(isdefined(self.stored_player) && self.stored_player != player);
+		if(can_save_here){
+			player thread brainDrillSave(brain_drill, self);
+			IPrintLnBold("mindsaved");
+		}
 	}
 }
 
@@ -108,7 +179,7 @@ function deathCallback(){
 */
 
 //Call On: Player to mindsave
-function brainDrillSave(brain_drill){
+function brainDrillSave(brain_drill, trig){
 	self endon("disconnect");
 	if(isdefined(self.brain_drill)){
 		//Hide old clone model
@@ -116,11 +187,29 @@ function brainDrillSave(brain_drill){
 	}
 	self.brain_drill = brain_drill;
 
+	//player has saved so no longer allow them to save again
+	self.can_mindsave = false;
+
 	//Show new clone model
 	self.brain_drill.clone = brain_drill brainDrillSpawnClone();
 
 	//Save info
 	self.mindsaved = SpawnStruct();
+
+	//tell this trig that it belongs to this player
+	trig.stored_player = self;
+
+	//trig Hintstring turn off
+	plrs = GetPlayers();
+	ArrayRemoveValue(plrs, self);
+	foreach(plr in plrs){
+		str = "";
+		if(isdefined(plr.can_mindsave) && plr.can_mindsave){
+			str = "SOMEONE ELSE IS SAVED HERE";
+		}
+		trig SetHintStringForPlayer(plr, str);
+	}
+	trig SetHintStringForPlayer(self, "YOU ARE MINDSAVED HERE");
 
 	//Active perks
 	if(isdefined(self.perks_active)){
@@ -196,7 +285,7 @@ function brainDrillRespawn(){
 
 	//Give saved weapons
 	foreach(wpn_info in self.mindsaved.weapon_info){
-		//NO SHIELD
+		//NO SHIELD SUPPORT
 		given_weapon = self zm_weapons::weapon_give(wpn_info.weapon);
 		self SetWeaponAmmoClip(given_weapon, wpn_info.clip_size);
 
@@ -218,9 +307,13 @@ function brainDrillRespawn(){
 	self.score = self.mindsaved.score;
 	self.pers["score"] = self.score;
 
-	//GOBBLEGUM NOT SUPPORTED ATM
-	//BUCKET STUFF NOT NEEDED
-
+	//turn hinstring off and no longer store this player on the trig
+	foreach(trg in level.brain_trigs){
+		if(isdefined(trg.stored_player) && trg.stored_player == self){
+			trg.stored_player = undefined;
+			trg SetHintStringForPlayer(self, "");
+		}
+	}
 }
 
 //Call On: Player
