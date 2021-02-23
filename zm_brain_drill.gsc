@@ -59,7 +59,6 @@ function brainDrillInit()
 	
 	//level.func_brain_drill_respawn = &brainDrillRespawn;
 	level.check_end_solo_game_override = &checkPlayerBrainDrill;
-	level.var_50d5cc84 = 0;
 	
 	//GET ENT OF BRAIN DRILLS and thread on waitfors
 	callback::on_player_killed(&checkPlayerBrainDrill);
@@ -74,8 +73,6 @@ function brainDrillInit()
 
 	//powerup
 	brainDropInit();
-
-	level thread demo();
 }
 
 //Call On: Player connected
@@ -120,17 +117,6 @@ function brainDrillHintEnable(player){
 		//(this includes if this player is stored here - they replace themself)
 		self SetHintStringForPlayer(player, "Press ^3[{+activate}]^7 to ^5Mindsave^7");
 	}
-}
-
-//FOR TESTING ONLY
-//THREAD
-function demo(){
-	demo_trig = GetEnt("brain_demo", "targetname");
-	while(true){
-		demo_trig waittill("trigger", p);
-		p brainDrillRespawn();
-	}
-	
 }
 
 //Call On: brain drill trigger
@@ -269,18 +255,18 @@ function brainDrillRespawn(){
 
 	self.brain_drill = undefined; //The player no longer has a brain drill
 
-	//Give Saved Perks
-	if(isdefined(self.mindsaved.perks)){
-		foreach(perk in self.mindsaved.perks){
-			self zm_perks::give_perk(perk);
-		}
-	}
-
 	//Take current weapons
 	current_wpns = self GetWeaponsList(true); //true - includes alt models
 	foreach(wpn in current_wpns){
 		//NO HERO WPN
 		self zm_weapons::weapon_take(wpn);
+	}
+
+	//Give Saved Perks
+	if(isdefined(self.mindsaved.perks)){
+		foreach(perk in self.mindsaved.perks){
+			self zm_perks::give_perk(perk);
+		}
 	}
 
 	//Give saved weapons
