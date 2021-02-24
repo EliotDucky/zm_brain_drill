@@ -108,16 +108,28 @@ function shouldDropBrain(){
 }
 
 //Call On: brain drill trig
-function brainDrillHintEnable(player){
-	//if this trigger already storing another player
-	if(isdefined(self.stored_player) && self.stored_player != player){
-		//"someone else is saved here"
-		self SetHintStringForPlayer(player, "SOMEONE ELSE IS SAVED HERE");
+//enable to turn on ones to be used
+//enable = false to turn off all for player
+	//(other than the one that they are saved at)
+function brainDrillHintEnable(player, enable = true){
+	if(enable){
+		//if this trigger already storing another player
+		if(isdefined(self.stored_player) && self.stored_player != player){
+			//"someone else is saved here"
+			self SetHintStringForPlayer(player, "SOMEONE ELSE IS SAVED HERE");
+		}else{
+			//(this includes if this player is stored here - they replace themself)
+			self SetHintStringForPlayer(player, "Press ^3[{+activate}]^7 to ^5Mindsave^7");
+		}
 	}else{
-		//(this includes if this player is stored here - they replace themself)
-		self SetHintStringForPlayer(player, "Press ^3[{+activate}]^7 to ^5Mindsave^7");
+		if(!(isdefined(self.stored_player) && self.stored_player == player)){
+			self SetHintStringForPlayer(player, "");
+		}
 	}
+	
 }
+
+
 
 //Call On: brain drill trigger
 //THREAD
@@ -134,6 +146,10 @@ function brainDrillWaitFor(){
 		can_save_here &= !(isdefined(self.stored_player) && self.stored_player != player);
 		if(can_save_here){
 			player thread brainDrillSave(brain_drill, self);
+			wait(0.05);
+			foreach(trig in level.brain_trigs){
+				trig brainDrillHintEnable(player, false);
+			}
 			IPrintLnBold("mindsaved");
 		}
 	}
