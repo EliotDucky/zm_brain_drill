@@ -1,32 +1,10 @@
 Creating the powerup:
-"Name: zm_powerups::register_powerup( <str_powerup>, [func_grab_powerup], [func_setup] )"
-"Module: Zombie Powerups"
-"Summary: Registers functions to run when zombie perks are given to and taken from players."
-"MandatoryArg: <str_powerup>: the name of the specialty that this perk uses. This should be unique, and will identify this perk in system scripts."
-"OptionalArg: [func_grab_powerup]: this function will run when the player grabs the powerup."
-"OptionalArg: [func_setup]: this function will in addition to normal powerup setup."	
-"Example: register_powerup( "nuke", &grab_nuke );"
-
-Add powerup:
-zm_powerups::add_zombie_powerup( powerup_name,
-								 model_name, hint, func_should_drop_with_regular_powerups, only_affects_grabber, any_team, zombie_grabbable, fx, client_field_name, time_name, on_name, clientfield_version = VERSION_SHIP, player_specific = false )
-
-where func_should_drop_with_regular_powerups is a function returning true or false as to whether if can spawn right now
-
-
-e.g:
-zm_powerups::add_zombie_powerup( "fire_sale",
-								"p7_zm_power_up_firesale", &"ZOMBIE_POWERUP_MAX_AMMO", &func_should_drop_fire_sale, !POWERUP_ONLY_AFFECTS_GRABBER, !POWERUP_ANY_TEAM, !POWERUP_ZOMBIE_GRABBABLE, undefined, CLIENTFIELD_POWERUP_FIRE_SALE, "zombie_powerup_fire_sale_time", "zombie_powerup_fire_sale_on" );
-
-
 
 Player voice over on pickup
 <player> zm_powerups::powerup_vo(<type>)
 e.g: player thread zm_powerups::powerup_vo("firesale");
 
-Include in standard drops (already handled in register):
-zm_powerups::include_zombie_powerup( powerup_name )
+Mule Kick Issues:
+level.player_too_many_weapons_monitor = false;
+if it needs to be forced off
 
-
-TO-DO:
-	add CSC stuff

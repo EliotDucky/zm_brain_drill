@@ -4,14 +4,20 @@
 #using scripts\shared\callbacks_shared;
 #using scripts\shared\system_shared;
 #using scripts\shared\util_shared;
+#using scripts\shared\flag_shared;
+//#using scripts\shared\visionset_mgr_shared;
 
 #using scripts\zm\_zm_laststand;
 #using scripts\zm\_zm_perks;
 #using scripts\zm\_zm_weapons;
 #using scripts\zm\_zm_powerups;
+#using scripts\zm\_zm_audio;
+//#using scripts\zm\_zm_score;
+//#using scripts\zm\_zm_utility;
+//#using scripts\zm\_zm;
 
 #insert scripts\zm\zm_brain_drill\zm_brain_drill.gsh;
-
+#insert scripts\zm\_zm_perks.gsh;
 
 #precache("triggerstring", "Press ^3[{+activate}]^7 to ^5Mindsave^7");
 #precache("triggerstring", "SOMEONE ELSE IS SAVED HERE");
@@ -22,7 +28,8 @@
 #namespace zm_brain_drill;
 
 function autoexec __init__(){
-	system::register("zm_brain_drill", &brainDrillInit, undefined, undefined);
+	//waits for zm so that it can override its callback funcs
+	system::register("zm_brain_drill", &brainDrillInit, undefined, Array("zm"));
 }
 
 /*
@@ -56,23 +63,25 @@ level:
 
 function brainDrillInit()
 {
+	overrides();
 	
-	//level.func_brain_drill_respawn = &brainDrillRespawn;
-	level.check_end_solo_game_override = &checkPlayerBrainDrill;
-	
-	//GET ENT OF BRAIN DRILLS and thread on waitfors
-	callback::on_player_killed(&checkPlayerBrainDrill);
-	callback::on_connect(&onPlayerConnect);
-	//level.callbackPlayerKilled = &checkPlayerBrainDrill;
-
-	//GLOBAL LOGIC DOESN'T WORK, DELETE AND UNCOMMENT IN ZM_PATCH
-	//level.brain_drill_callback = &checkPlayerBrainDrill;
-
 	level.brain_trigs = GetEntArray("brain_drill_trig", "targetname");
 	array::thread_all(level.brain_trigs, &brainDrillWaitFor);
 
 	//powerup
 	brainDropInit();
+}
+
+function overrides(){
+	level.check_end_solo_game_override = &playerKilledOverride;
+	
+	callback::on_player_killed(&playerKilledOverride);
+	level.callbackPlayerKilled = &playerKilledOverride;
+
+	callback::on_connect(&onPlayerConnect);
+
+	//level.playerlaststand_func = &playerBrainLastStand;
+	
 }
 
 //Call On: Player connected
@@ -128,8 +137,6 @@ function brainDrillHintEnable(player, enable = true){
 	}
 	
 }
-
-
 
 //Call On: brain drill trigger
 //THREAD
@@ -334,3 +341,98 @@ function brainDrillSpawnClone(){
 	clone = util::spawn_model("c_t6_default_character_fb", clone_struct.origin, clone_struct.angles);
 	return clone;
 }
+
+//Call On: Player
+function playerKilledOverride(){
+	if (!( players.size == 1 && level flag::get( "solo_game" ) && self.lives > 0 && self HasPerk(PERK_QUICK_REVIVE )){
+		if(! self checkPlayerBrainDrill()){
+			level waittill( "forever" );
+		}
+	}
+}
+
+
+/*
+//Last stand override
+//Call On: Player
+function playerBrainLastStand( eInflictor, attacker, iDamage, sMeansOfDeath, weapon, vDir, sHitLoc, psOffsetTime, deathAnimDuration){
+	b_alt_visionset = false;
+		
+	self AllowJump(false);
+	
+	currWeapon = self GetCurrentWeapon();
+	
+	self AddWeaponStat( currWeapon, "deathsDuringUse", 1 );
+
+	// Grab the perks if we have the player persistent ability "perk lose"
+	if( IS_TRUE(self.pers_upgrades_awarded["perk_lose"]) )
+	{
+		self zm_pers_upgrades_functions::pers_upgrade_perk_lose_save();
+	}
+
+	players = GetPlayers();
+	if ( players.size == 1 && level flag::get( "solo_game" ) )
+	{
+		if ( self.lives > 0 && self HasPerk(PERK_QUICK_REVIVE) )
+		{
+			self thread zm::wait_and_revive();
+		}
+	}
+	
+	self zm_utility::clear_is_drinking();
+
+	self thread zm::remote_revive_watch();
+	
+	self zm_score::player_downed_penalty();
+	
+	// Turns out we need to do this after all, but we don't want to change _laststand.gsc postship, so I'm doing it here manually instead
+	self DisableOffhandWeapons();
+
+	self thread zm::last_stand_grenade_save_and_return();
+	
+	if( sMeansOfDeath != "MOD_SUICIDE" && sMeansOfDeath != "MOD_FALLING" )
+	{		
+		if( !IS_TRUE(self.intermission) )
+			self zm_audio::create_and_play_dialog( "general", "revive_down" );
+		else if(isDefined(level.custom_player_death_vo_func) && !self [[level.custom_player_death_vo_func]]() )
+		{
+			self zm_audio::create_and_play_dialog( "general", "exert_death" );
+		}
+	}
+	
+	if( IsDefined( level._zombie_minigun_powerup_last_stand_func ) )
+	{
+		self thread [[level._zombie_minigun_powerup_last_stand_func]]();
+	}
+	
+	if( IsDefined( level._zombie_tesla_powerup_last_stand_func ) )
+	{
+		self thread [[level._zombie_tesla_powerup_last_stand_func]]();
+	}
+	
+	if ( self HasPerk( PERK_ELECTRIC_CHERRY ) )
+	{
+		b_alt_visionset = true;
+		
+		if ( IsDefined( level.custom_laststand_func ) )
+		{
+			self thread [[ level.custom_laststand_func ]]();
+		}
+	}
+
+	if( IsDefined( self.intermission ) && self.intermission )
+	{
+		//maps\_zombiemode_challenges::doMissionCallback( "playerDied", self );
+		
+		wait(.5);
+		self zm::stopsounds();
+		
+		level waittill( "forever" );
+	}
+	
+	if ( !( b_alt_visionset ) )
+	{
+		visionset_mgr::activate( "visionset", ZM_LASTSTAND_VISIONSET, self, 1 );
+	}
+}
+*/

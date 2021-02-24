@@ -5,3 +5,4 @@
  - Check mule kick conditions
  - Disable all hintstrings on other braindrills once mindsaved somewhere else
  - Stop the respawn on quick revive and only on death
+ - Co-op death respawns
