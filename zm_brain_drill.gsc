@@ -29,7 +29,8 @@
 
 function autoexec __init__(){
 	//waits for zm so that it can override its callback funcs
-	system::register("zm_brain_drill", &brainDrillInit, undefined, Array("zm"));
+	yarra = Array("zm", "callback");
+	system::register("zm_brain_drill", &brainDrillInit, undefined, yarra);
 }
 
 /*
@@ -344,7 +345,7 @@ function brainDrillSpawnClone(){
 
 //Call On: Player
 function playerKilledOverride(){
-	if (!( players.size == 1 && level flag::get( "solo_game" ) && self.lives > 0 && self HasPerk(PERK_QUICK_REVIVE )){
+	if (!( GetPlayers().size == 1 && level flag::get( "solo_game" ) && self.lives > 0 && self HasPerk(PERK_QUICK_REVIVE ))){
 		if(! self checkPlayerBrainDrill()){
 			level waittill( "forever" );
 		}
