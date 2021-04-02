@@ -27,6 +27,10 @@ e.g: player thread zm_powerups::powerup_vo("firesale");
 Include in standard drops (already handled in register):
 zm_powerups::include_zombie_powerup( powerup_name )
 
+Player models:
+
+void <player> GetCharacterBodyModel(<modelType>)
+
 
 TO-DO:
 	add CSC stuff
