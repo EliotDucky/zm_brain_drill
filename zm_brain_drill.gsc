@@ -56,17 +56,10 @@ level:
 
 function brainDrillInit()
 {
-	
-	//level.func_brain_drill_respawn = &brainDrillRespawn;
 	level.check_end_solo_game_override = &checkPlayerBrainDrill;
 	
-	//GET ENT OF BRAIN DRILLS and thread on waitfors
 	callback::on_player_killed(&checkPlayerBrainDrill);
 	callback::on_connect(&onPlayerConnect);
-	//level.callbackPlayerKilled = &checkPlayerBrainDrill;
-
-	//GLOBAL LOGIC DOESN'T WORK, DELETE AND UNCOMMENT IN ZM_PATCH
-	//level.brain_drill_callback = &checkPlayerBrainDrill;
 
 	level.brain_trigs = GetEntArray("brain_drill_trig", "targetname");
 	array::thread_all(level.brain_trigs, &brainDrillWaitFor);
@@ -168,18 +161,6 @@ function brainDrillWaitFor(){
 		.score
 */
 
-/*
-//Call On: Player  - callback::on_player_killed
-function deathCallback(){
-	self endon("disconnect");
-	IPrintLnBold("dead");
-	if(self checkPlayerBrainDrill()){
-		IPrintLnBold("go");
-		self thread brainDrillRespawn();
-	}
-}
-*/
-
 //Call On: Player to mindsave
 function brainDrillSave(brain_drill, trig){
 	self endon("disconnect");
@@ -262,7 +243,15 @@ function brainDrillRespawn(){
 	self notify("stop_revive_trigger");
 	wait(0.05);
 
-	self zm_laststand::auto_revive(self);
+	self zm_laststand::auto_revive(self, true);
+	self notify("stop_revive_trigger");
+	if(isdefined(self.revivetrigger)){
+		self.revivetrigger Delete();
+		self.revivetrigger = undefined;
+	}
+	self EnableWeaponCycling();
+	self EnableOffhandWeapons();
+	self SetStance("stand");
 
 	self SetOrigin(self.brain_drill.origin);
 	self SetPlayerAngles(self.brain_drill.angles);
