@@ -9,7 +9,7 @@
 
 The brain drop enables the use of the brain drills to save the player's perks, points, weapons, and ammo. This is set by a simple boolean on the player. The boolean is initialised on each player when they connect to the game.
  
-```c
+```gsc
 //Call On: Player connected
 function onPlayerConnect(){
 	self.can_mindsave = false;
@@ -24,7 +24,7 @@ callback::on_connect(&onPlayerConnect);
 
 The boolean is then set to `true` in the function to be called when a player picks up the brain drop.
 
-```c
+```gsc
 function grabDropBrain(player){
 	player.can_mindsave = true;
 	//set hintstrings for player based on who's stored there
@@ -38,7 +38,7 @@ The second half of this function tells each brain drill trigger to enable the Hi
 
 This function is registered simply into the drop system by the following initialisation function.
 
-```c
+```gsc
 function brainDropInit(){
 	zm_powerups::register_powerup( "brain", &grabDropBrain );
 	zm_powerups::add_zombie_powerup( "brain",
@@ -60,11 +60,11 @@ The second external call to `zm_powerups` sets the parameters for how the poweru
 2. `model_name` - This is the name of the model as it appears in the Asset Property Editor (APE). This model should also be precached to allow it to load in efficiently as well as added to the zone file or zone package.
 
 Script:
- ```c
+ ```gsc
  #precache("model", "p7_zm_der_zombie_brain"); //powerup model
  ```
 Zone:
- ```c
+ ```gsc
  xmodel,p7_zm_der_zombie_brain
  ```
 3. `hint` - this is not necessary to set for the purposes of this powerup as there is no hint displayed for it. Most other powerups have this set up as a specific localised string, i.e. `&"ZOMBIE_POWERUP_MAX_AMMO"`.
@@ -72,7 +72,7 @@ Zone:
 
 Most powerups can be spawned from the start of the game, so simply reference `&zm_powerups::func_should_always_drop()`. However for this powerup, it drops after a specific round or if an event has occured.
 
-```c
+```gsc
 function shouldDropBrain(){
 	b = level.train_hit || level.round_number >= BRAIN_DROP_ROUND;
 	return b;
@@ -81,7 +81,7 @@ function shouldDropBrain(){
 
 This event is `level.train_hit` which is specific to only one level I'm making, Celerium. Instead this should be changed to a generic name that can be set as `true` if the train is hit or any other override to make the drops spawn early. The `BRAIN_DROP_ROUND` is a constant which is replaced by macro upon linking the level. This is defined in the GSH file, replacing the capital text with `15` upon linking. This means that this GSH can be overriden per level depending on when it makes sense to enable the use of the brain drills.
 
-```c
+```gsc
 #define BRAIN_DROP_ROUND 				15
 ```
 5. `only_affects_grabber` - does this drop only affect the grabber? Meaning, should the function registered against the powerup only be called on the player that picks up/grabs the powerup.
@@ -100,7 +100,7 @@ The saving of the player's data is handles by the function `brainDrillSave(brain
 
 Firstly, if the player is saved somewhere else, the property `self.brain_drill` will be defined, and as such the old clone model should be deleted to show that the player is no longer saved at the previous brain drill location. The the location needs to be replaced or defined for the first time as this brain drill.
 
-```c
+```gsc
 	if(isdefined(self.brain_drill)){
 		//Hide old clone model
 		self.brain_drill.clone Delete();
@@ -124,7 +124,7 @@ The player's data for weapons, perks, etc. are stored on a struct to keep simple
 		.score
 ```
 
-```c
+```gsc
 	if(isdefined(self.perks_active)){
 		self.mindsaved.perks = [];
 		foreach(perk in self.perks_active){
@@ -137,7 +137,7 @@ The third parameter of `array::add` is set to false to indicate that no duplicat
 
 Although we get the list of the player's weapons, we also get the current weapon they're holding, such that once the player gets their weapons restored, they swap to the weapon that they were holding when they saved.
 
-```c
+```gsc
 	self.mindsaved.current_weapon = self GetCurrentWeapon();
 	player_weapons = self GetWeaponsList();
 	self.mindsaved.weapon_info = [];
@@ -167,7 +167,7 @@ There are some special weapons, such as flamethrowers or other charged weapons, 
 
 To respawn the player, first they must be revived. The function `brainDrillRespawn()` takes no parameters because the brain drill the player is saved at, is stored on the player, who is `self` in this function.
 
-```c
+```gsc
 	self zm_laststand::auto_revive(self, true);
 	self notify("stop_revive_trigger");
 	if(isdefined(self.revivetrigger)){
@@ -180,7 +180,7 @@ To respawn the player, first they must be revived. The function `brainDrillRespa
 
 The revive trigger is stopped and deleted to stop it appearing permanently over the player for co-op players.
 
-```c
+```gsc
 	self EnableWeaponCycling();
 	self EnableOffhandWeapons();
 	self SetStance("stand");
@@ -188,7 +188,7 @@ The revive trigger is stopped and deleted to stop it appearing permanently over 
 
 The player is then respawned at the position and with the angles of the brain drill struct, placed in the floor. The clone model is also deleted to show that no player is saved at this location any more.
 
-```c
+```gsc
 	self SetOrigin(self.brain_drill.origin);
 	self SetPlayerAngles(self.brain_drill.angles);
 	//Delete clone model
@@ -199,7 +199,7 @@ To stop the player being considered for respawning if they die - especially in s
 
 Before returning anything, the player's current weapons are taken. These are weapons they may have if they are in last stand or have picked up after saving, such that they are solely returned to the state they were in at the point of saving.
 
-```c
+```gsc
 	current_wpns = self GetWeaponsList(true); //true - includes alt models
 	foreach(wpn in current_wpns){
 		self zm_weapons::weapon_take(wpn);
@@ -208,7 +208,7 @@ Before returning anything, the player's current weapons are taken. These are wea
 
 The perks are returned to the player before giving weapons back. If the player had Mule Kick, which allows three weapons instead of the default two, the third weapon returned would cause the game to think that the player is cheating by having more weapons than allowed.
 
-```c
+```gsc
 	//Give Saved Perks
 	if(isdefined(self.mindsaved.perks)){
 		foreach(perk in self.mindsaved.perks){
