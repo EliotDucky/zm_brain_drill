@@ -2,15 +2,18 @@
 
 #using scripts\shared\array_shared;
 #using scripts\shared\callbacks_shared;
+#using scripts\shared\flag_shared;
 #using scripts\shared\system_shared;
 #using scripts\shared\util_shared;
 
+#using scripts\zm\_zm;
 #using scripts\zm\_zm_laststand;
 #using scripts\zm\_zm_perks;
 #using scripts\zm\_zm_weapons;
 #using scripts\zm\_zm_powerups;
 
 #insert scripts\zm\zm_brain_drill\zm_brain_drill.gsh;
+#insert scripts\zm\_zm_perks.gsh;
 
 
 #precache("triggerstring", "Press ^3[{+activate}]^7 to ^5Mindsave^7");
@@ -58,7 +61,8 @@ function brainDrillInit()
 {
 	level.check_end_solo_game_override = &checkPlayerBrainDrill;
 	
-	callback::on_player_killed(&checkPlayerBrainDrill);
+	callback::on_player_killed(&brainDrillLastStand);
+	callback::on_laststand(&brainDrillLastStand);
 	callback::on_connect(&onPlayerConnect);
 
 	level.brain_trigs = GetEntArray("brain_drill_trig", "targetname");
@@ -307,15 +311,36 @@ function brainDrillRespawn(){
 	}
 }
 
-//Call On: Player
+//Call On: Player in laststand
+function brainDrillLastStand(){
+	if(self checkPlayerBrainDrill()){
+		if(level flag::get("solo_game")){
+			if(self HasPerk(PERK_QUICK_REVIVE)){
+				self thread promptFeed();
+			}else{
+				self brainDrillRespawn();
+			}
+		}else{
+			if(self zm::getAllOtherPlayers().size == 0){
+				self brainDrillRespawn();
+			}else{
+				self thread promptFeed();
+			}
+		}
+	}
+}
+
+//Call On: Player in laststand
 function checkPlayerBrainDrill(){
 	saved = false;
 	if(isdefined(self.brain_drill)){
-		self thread brainDrillRespawn();
 		saved = true;
 	}
 	return saved;
 }
+
+//Call On: Player in laststand
+function promptFeed()
 
 //Call On: Brain Drill respawn point
 function brainDrillSpawnClone(){
