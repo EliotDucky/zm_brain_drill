@@ -406,8 +406,7 @@ function suicidePromptThink(){
 		self.pre_suicide_weapon = self GetCurrentWeapon();
 		self GiveWeapon( level.weaponSuicide );
 		self SwitchToWeapon( level.weaponSuicide );
-		duration = self DoCowardsWayAnims();
-		DEFAULT(duration, 4.0);
+		duration = 4.0;
 
 		suicide_success = zm_laststand::suicide_do_suicide( duration );
 		self.laststand = undefined;
@@ -415,14 +414,11 @@ function suicidePromptThink(){
 
 		if ( suicide_success )
 		{
-			self notify("player_suicide");
+			IPrintLnBold("suicide succeeded");
 
 			util::wait_network_frame(); //to guarantee the notify gets sent and processed before the rest of this script continues to turn the guy into a spectator
-
-			//Stat Tracking
-			self zm_stats::increment_client_stat( "suicides" );
 			
-			self brainDrillRespawn();
+			self thread brainDrillRespawn();
 
 			return;
 		}
