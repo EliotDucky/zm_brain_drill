@@ -3,12 +3,16 @@
 #using scripts\shared\array_shared;
 #using scripts\shared\callbacks_shared;
 #using scripts\shared\flag_shared;
+#using scripts\shared\laststand_shared;
 #using scripts\shared\system_shared;
 #using scripts\shared\util_shared;
+
+#insert scripts\shared\shared.gsh;
 
 #using scripts\zm\_zm;
 #using scripts\zm\_zm_laststand;
 #using scripts\zm\_zm_perks;
+#using scripts\zm\_zm_stats;
 #using scripts\zm\_zm_weapons;
 #using scripts\zm\_zm_powerups;
 
@@ -316,7 +320,8 @@ function brainDrillLastStand(){
 	if(self checkPlayerBrainDrill()){
 		if(level flag::get("solo_game")){
 			if(self HasPerk(PERK_QUICK_REVIVE)){
-				self thread promptFeed();
+				//self thread zm_laststand::suicide_trigger_spawn();
+				self brainDrillSuicidePrompt();
 			}else{
 				self brainDrillRespawn();
 			}
@@ -324,9 +329,115 @@ function brainDrillLastStand(){
 			if(self zm::getAllOtherPlayers().size == 0){
 				self brainDrillRespawn();
 			}else{
-				self thread promptFeed();
+				self thread zm_laststand::suicide_trigger_spawn();
 			}
 		}
+	}
+}
+
+function brainDrillSuicidePrompt(){
+	//copied from zm_laststand
+	radius = GetDvarint( "revive_trigger_radius" );
+
+	self.suicidePrompt = newclientHudElem( self );
+	
+	self.suicidePrompt.alignX = "center";
+	self.suicidePrompt.alignY = "middle";
+	self.suicidePrompt.horzAlign = "center";
+	self.suicidePrompt.vertAlign = "bottom";
+	self.suicidePrompt.y = -170;
+	if ( self IsSplitScreen() )
+	{
+		self.suicidePrompt.y = -132;
+	}
+	self.suicidePrompt.foreground = true;
+	self.suicidePrompt.font = "default";
+	self.suicidePrompt.fontScale = 1.5;
+	self.suicidePrompt.alpha = 1;
+	self.suicidePrompt.color = ( 1.0, 1.0, 1.0 );
+	self.suicidePrompt.hidewheninmenu = true;
+
+	self thread suicidePromptThink();
+}
+
+function suicidePromptThink(){
+	self endon ( "disconnect" );
+	self endon ( "zombified" );
+	self endon ( "stop_revive_trigger" );
+	self endon ( "player_revived");
+	self endon ( "bled_out");
+	self endon ("fake_death");
+	level endon("end_game");
+	level endon("stop_suicide_trigger");
+	
+	//in case the game ends while this is running
+	self thread laststand::clean_up_suicide_hud_on_end_game();
+	
+	//in case user is holding UseButton while this is running
+	self thread laststand::clean_up_suicide_hud_on_bled_out();
+	
+	// If player was holding use while going into last stand, wait for them to release it
+	while ( self UseButtonPressed() )
+	{
+		wait ( 1 );
+	}
+	
+	if(!isdefined(self.suicidePrompt))
+	{
+		return;
+	}
+	
+	while( true )
+	{
+		wait ( 0.1 );
+		
+		if(!isdefined(self.suicidePrompt))
+		{
+			continue;
+		}
+					
+		self.suicidePrompt setText( &"ZOMBIE_BUTTON_TO_SUICIDE" );
+		
+		if ( !self zm_laststand::is_suiciding() )
+		{
+			continue;
+		}
+
+		self.pre_suicide_weapon = self GetCurrentWeapon();
+		self GiveWeapon( level.weaponSuicide );
+		self SwitchToWeapon( level.weaponSuicide );
+		duration = self DoCowardsWayAnims();
+		DEFAULT(duration, 4.0);
+
+		suicide_success = zm_laststand::suicide_do_suicide( duration );
+		self.laststand = undefined;
+		self TakeWeapon( level.weaponSuicide );
+
+		if ( suicide_success )
+		{
+			self notify("player_suicide");
+
+			util::wait_network_frame(); //to guarantee the notify gets sent and processed before the rest of this script continues to turn the guy into a spectator
+
+			//Stat Tracking
+			self zm_stats::increment_client_stat( "suicides" );
+			
+			self brainDrillRespawn();
+
+			return;
+		}
+
+		IPrintLnBold("suicide failed");
+
+		self SwitchToWeapon( self.pre_suicide_weapon );
+		self.pre_suicide_weapon = undefined;
+	}
+}
+
+//Call On: Dead Player
+function brainDrillDeath(){
+	if(self checkPlayerBrainDrill()){
+		brainDrillRespawn();
 	}
 }
 
@@ -338,9 +449,6 @@ function checkPlayerBrainDrill(){
 	}
 	return saved;
 }
-
-//Call On: Player in laststand
-function promptFeed()
 
 //Call On: Brain Drill respawn point
 function brainDrillSpawnClone(){
