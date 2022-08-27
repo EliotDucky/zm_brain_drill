@@ -151,7 +151,6 @@ function brainDrillWaitFor(){
 			foreach(trig in level.brain_trigs){
 				trig brainDrillHintEnable(player, false);
 			}
-			IPrintLnBold("mindsaved");
 		}
 	}
 }
@@ -207,7 +206,6 @@ function brainDrillSave(brain_drill, trig){
 		self.mindsaved.perks = [];
 		foreach(perk in self.perks_active){
 			array::add(self.mindsaved.perks, perk, 0); //No dupes
-			IPrintLnBold(perk);
 		}
 	}
 	wait(0.05);
@@ -216,7 +214,6 @@ function brainDrillSave(brain_drill, trig){
 	player_weapons = self GetWeaponsList();
 	self.mindsaved.weapon_info = [];
 	foreach(weapon in player_weapons){
-		IPrintLnBold(weapon.displayname);
 		//Handle Alt Weapons
 		base_of_alt = zm_weapons::get_nonalternate_weapon(weapon);
 		if(base_of_alt != weapon){
@@ -240,8 +237,6 @@ function brainDrillSave(brain_drill, trig){
 	}
 
 	self.mindsaved.score = self.score;
-	IPrintLnBold(self.score);
-
 }
 
 //Call On: Player to respawn
@@ -449,6 +444,28 @@ function checkPlayerBrainDrill(){
 //Call On: Brain Drill respawn point
 function brainDrillSpawnClone(){
 	clone_struct = struct::get(self.target, "targetname");
-	clone = util::spawn_model("c_t6_default_character_fb", clone_struct.origin, clone_struct.angles);
+	clone = util::spawn_model(self.stored_player getPlayerCloneModel(), clone_struct.origin, clone_struct.angles);
 	return clone;
+}
+
+//Call On: Player
+//Returns string of player's model
+function getPlayerCloneModel(){
+	str = "c_t6_default_character_fb";
+	if(isdefined(level.braindrill_c_models) && isdefined(self) && isdefined(self.characterIndex) && isdefined(level.braindrill_c_models[self.characterIndex])){
+		str = level.braindrill_c_models[self.characterIndex];
+		IPrintLnBold(self.characterIndex);
+		wait(0.5);
+	}
+	IPrintLnBold(str);
+	return str;
+}
+
+//Call On: Player
+//Register at start of game
+function registerBraindrillCharacterModel(str_model_name){
+	DEFAULT(level.braindrill_c_models, array("", "", "", "", "", "", "", ""));
+	if(isdefined(self) && isdefined(self.characterIndex)){
+		level.braindrill_c_models[self.characterIndex] = str_model_name;
+	}
 }
