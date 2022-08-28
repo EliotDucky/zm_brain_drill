@@ -181,7 +181,7 @@ function brainDrillSave(brain_drill, trig){
 	self.can_mindsave = false;
 
 	//Show new clone model
-	self.brain_drill.clone = brain_drill brainDrillSpawnClone();
+	self.brain_drill.clone = brain_drill brainDrillSpawnClone(self);
 
 	//Save info
 	self.mindsaved = SpawnStruct();
@@ -442,9 +442,9 @@ function checkPlayerBrainDrill(){
 }
 
 //Call On: Brain Drill respawn point
-function brainDrillSpawnClone(){
+function brainDrillSpawnClone(player){
 	clone_struct = struct::get(self.target, "targetname");
-	clone = util::spawn_model(self.stored_player getPlayerCloneModel(), clone_struct.origin, clone_struct.angles);
+	clone = util::spawn_model(player getPlayerCloneModel(), clone_struct.origin, clone_struct.angles);
 	return clone;
 }
 
@@ -454,7 +454,10 @@ function getPlayerCloneModel(){
 	str = "c_t6_default_character_fb";
 	if(isdefined(level.braindrill_c_models) && isdefined(self) && isdefined(self.characterIndex) && isdefined(level.braindrill_c_models[self.characterIndex])){
 		str = level.braindrill_c_models[self.characterIndex];
-		IPrintLnBold(self.characterIndex);
+		IPrintLnBold("Index: " + self.characterIndex);
+		if(!isdefined(self.characterIndex)){
+			IPrintLnBold("Not Defined");
+		}
 		wait(0.5);
 	}
 	IPrintLnBold(str);
