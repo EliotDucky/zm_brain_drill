@@ -102,7 +102,9 @@ function grabDropBrain(player){
 }
 
 function shouldDropBrain(){
-	b = IS_TRUE(level.train_hit);
+	b = level.train_hit || level.round_number >= BRAIN_DROP_ROUND;
+	//FOLLOWING IS FOR TESTING ONLY:
+	b = true; //DELETE FOR RELEASE
 	return b;
 }
 
@@ -452,13 +454,13 @@ function getPlayerCloneModel(){
 	str = "c_t6_default_character_fb";
 	if(isdefined(level.braindrill_c_models) && isdefined(self) && isdefined(self.characterIndex) && isdefined(level.braindrill_c_models[self.characterIndex])){
 		str = level.braindrill_c_models[self.characterIndex];
-		//IPrintLnBold("Index: " + self.characterIndex);
+		IPrintLnBold("Index: " + self.characterIndex);
 		if(!isdefined(self.characterIndex)){
-			//IPrintLnBold("Not Defined");
+			IPrintLnBold("Not Defined");
 		}
 		wait(0.5);
 	}
-	//IPrintLnBold(str);
+	IPrintLnBold(str);
 	return str;
 }
 
