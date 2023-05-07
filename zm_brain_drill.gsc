@@ -247,14 +247,26 @@ function brainDrillRespawn(){
 	wait(0.05);
 
 	self zm_laststand::auto_revive(self, true);
-	self notify("stop_revive_trigger");
+	wait(0.05);
+	wait(0.05);
+	self notify("revive_done");
 	if(isdefined(self.revivetrigger)){
 		self.revivetrigger Delete();
 		self.revivetrigger = undefined;
 	}
 	self EnableWeaponCycling();
 	self EnableOffhandWeapons();
+	self AllowJump(true); 
+	self AllowCrouch(true); 
+	self AllowStand(true); 
+	self AllowSprint(true); 
 	self SetStance("stand");
+	if(isdefined(self.revivetrigger)){ 
+		self.revivetrigger Delete(); 
+		self.revivetrigger = undefined; 
+	} 
+	self notify("stop_revive_trigger");
+	self UndoLastStand();
 
 	self SetOrigin(self.brain_drill.origin);
 	self SetPlayerAngles(self.brain_drill.angles);
