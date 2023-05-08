@@ -484,3 +484,26 @@ function registerBraindrillCharacterModel(str_model_name){
 		level.braindrill_c_models[self.characterIndex] = str_model_name;
 	}
 }
+
+function disableBrainDrills(){
+	foreach(player in GetPlayers()){
+		//delete clone
+		if(isdefined(player.brain_drill)){
+			player.brain_drill.clone Delete();
+		}
+		//undefine the player's saved braindrill
+		player.brain_drill = undefined;
+		//stop players from mindsaving
+		player.can_mindsave = false;
+		//turn off all triggers
+		foreach(trig in level.brain_trigs){
+			trig brainDrillHintEnable(player, false);
+		}
+	}
+	//stop the brain from spawning
+	zm_powerups::powerup_remove_from_regular_drops("brain");
+	wait(0.05);
+	foreach(trig in level.brain_trigs){
+		trig Delete();
+	}
+}
