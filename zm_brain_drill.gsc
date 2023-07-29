@@ -104,7 +104,7 @@ function grabDropBrain(player){
 function shouldDropBrain(){
 	b = level.train_hit || level.round_number >= BRAIN_DROP_ROUND;
 	//FOLLOWING IS FOR TESTING ONLY:
-	b = true; //DELETE FOR RELEASE
+	//b = true; //DELETE FOR RELEASE
 	return b;
 }
 
@@ -505,5 +505,36 @@ function disableBrainDrills(){
 	wait(0.05);
 	foreach(trig in level.brain_trigs){
 		trig Delete();
+	}
+}
+
+//removes currently saved players at arr_locs or all locations if arr_locs is undefined
+//arr_locs is an array of integers that correspond to the script_int of that braindrill
+function resetBrainDrill(arr_locs){
+	foreach(player in GetPlayers()){
+		delete = false;
+		//delete clone
+		if(isdefined(player.brain_drill)){
+			if(isdefined(arr_locs)){
+				if(!IsArray(arr_locs)){
+					if(IS_EQUAL(arr_locs, player.brain_drill.script_int)){
+						delete = true;
+					}
+				}else{
+					foreach(num in arr_locs){
+						if(IS_EQUAL(num, player.brain_drill.script_int)){
+							delete = true;
+						}
+					}
+				}
+			}else{
+				delete = true;
+			}
+			if(delete){
+				player.brain_drill.clone Delete();
+				//undefine the player's saved braindrill
+				player.brain_drill = undefined;
+			}
+		}
 	}
 }
