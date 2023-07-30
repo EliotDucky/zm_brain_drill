@@ -102,9 +102,15 @@ function grabDropBrain(player){
 }
 
 function shouldDropBrain(){
-	b = level.train_hit || level.round_number >= BRAIN_DROP_ROUND;
+	b = false;
+	if(isdefined(level.brain_drill_override)){
+		b = [[level.brain_drill_override]]();
+	}else{
+		b = level.round_number >= BRAIN_DROP_ROUND;
+	}
+	
 	//FOLLOWING IS FOR TESTING ONLY:
-	//b = true; //DELETE FOR RELEASE
+	b = true; //DELETE FOR RELEASE
 	return b;
 }
 
