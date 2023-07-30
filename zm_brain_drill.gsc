@@ -65,7 +65,8 @@ function brainDrillInit()
 {
 	level.check_end_solo_game_override = &checkPlayerBrainDrill;
 	
-	callback::on_player_killed(&brainDrillLastStand);
+	callback::on_player_killed(&brainDrillDeath);
+	callback::on_joined_spectate(&brainDrillDeath);
 	callback::on_laststand(&brainDrillLastStand);
 	callback::on_connect(&onPlayerConnect);
 
@@ -401,7 +402,6 @@ function suicidePromptThink(){
 	
 	if(!isdefined(self.suicidePrompt))
 	{
-		IPrintLnBold("prompt not defined");
 		return;
 	}
 	
@@ -418,11 +418,9 @@ function suicidePromptThink(){
 		
 		if ( !self zm_laststand::is_suiciding() )
 		{
-			IPrintLn("not suiciding");
 			continue;
 		}
 
-		IPrintLnBold("player suiciding");
 
 
 		self.pre_suicide_weapon = self GetCurrentWeapon();
@@ -454,6 +452,11 @@ function suicidePromptThink(){
 
 //Call On: Dead Player
 function brainDrillDeath(){
+	//testing
+	if(self.sessionstate == "spectator"){
+		IPrintLnBold("player is a spectator");
+	}
+	IPrintLnBold("called on dead player");
 	if(self checkPlayerBrainDrill()){
 		brainDrillRespawn();
 	}
