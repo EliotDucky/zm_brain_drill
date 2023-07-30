@@ -250,6 +250,9 @@ function brainDrillRespawn(){
 	self endon("disconnect");
 	//SAY QUOTE
 	self notify("stop_revive_trigger");
+
+	IPrintLnBold("brain drill respawn");
+
 	wait(0.05);
 
 	self zm_laststand::auto_revive(self, true);
@@ -342,7 +345,8 @@ function brainDrillLastStand(){
 			if(self zm::getAllOtherPlayers().size == 0){
 				self brainDrillRespawn();
 			}else{
-				self thread zm_laststand::suicide_trigger_spawn();
+				//self thread zm_laststand::suicide_trigger_spawn();
+				self brainDrillSuicidePrompt();
 			}
 		}
 	}
@@ -397,6 +401,7 @@ function suicidePromptThink(){
 	
 	if(!isdefined(self.suicidePrompt))
 	{
+		IPrintLnBold("prompt not defined");
 		return;
 	}
 	
@@ -413,8 +418,12 @@ function suicidePromptThink(){
 		
 		if ( !self zm_laststand::is_suiciding() )
 		{
+			IPrintLn("not suiciding");
 			continue;
 		}
+
+		IPrintLnBold("player suiciding");
+
 
 		self.pre_suicide_weapon = self GetCurrentWeapon();
 		self GiveWeapon( level.weaponSuicide );
