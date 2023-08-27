@@ -319,9 +319,12 @@ function brainDrillRespawn(){
 
 	self SwitchToWeapon(self.mindsaved.current_weapon);
 
-	//Points
-	self.score = self.mindsaved.score;
-	self.pers["score"] = self.score;
+	//Points - keep if more than when mindsaved
+	if(self.score < self.mindsaved.score){
+		self.score = self.mindsaved.score;
+		self.pers["score"] = self.score;
+	}
+	
 
 	//turn hinstring off and no longer store this player on the trig
 	foreach(trg in level.brain_trigs){
