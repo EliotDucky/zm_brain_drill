@@ -248,4 +248,4 @@ The perks are returned to the player before giving weapons back. If the player h
 
 ## To-do:
 
- - Stop the respawn on quick revive and only on death
+ - Bug fixing
